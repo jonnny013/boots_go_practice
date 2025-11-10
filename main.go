@@ -1,42 +1,17 @@
-package main
+package textio
 
 import (
-	"errors"
+	"fmt"
 )
 
-type customer struct {
-	id      int
-	balance float64
+func test(text string) {
+	fmt.Println(text)
 }
 
-type transactionType string
-
-const (
-	transactionDeposit    transactionType = "deposit"
-	transactionWithdrawal transactionType = "withdrawal"
-)
-
-type transaction struct {
-	customerID      int
-	amount          float64
-	transactionType transactionType
+func main() {
+	test("starting Textio server")
+	test("stopping Textio server")
 }
 
-// Don't touch above this line
 
-func updateBalance(cus *customer, trns transaction) error {
-	switch trns.transactionType {
-	case transactionDeposit:
-		cus.balance += trns.amount
-		return nil
-	case transactionWithdrawal:
-		if cus.balance < trns.amount {
-			return errors.New("insufficient funds")
-		}
-		cus.balance -= trns.amount
-		return nil
-	default:
-		return errors.New("unknown transaction type")
-	}
-
-}
+// https://www.boot.dev/lessons/19ee5098-d35e-47ab-ad9f-cda126ff54f0
