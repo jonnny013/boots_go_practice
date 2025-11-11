@@ -26,3 +26,6 @@ func main() {
 	test("Hi there Shallan!")
 	test("Hey there Dalinar!")
 }
+
+
+// next: https://www.boot.dev/lessons/04984711-09c4-4020-ac36-6d4214012d34
