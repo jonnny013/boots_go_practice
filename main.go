@@ -1,13 +1,23 @@
 package main
 
-func addEmailsToQueue(emails []string) chan string {
-	ch := make(chan string, len(emails))
-
-	for i := range emails {
-		ch <- emails[i]
+func countReports(numSentCh chan int) int {
+	count := 0
+	for {
+		val, ok := <-numSentCh
+		if !ok {
+			break
+		}
+		count += val
 	}
-
-	return ch
+	return count
 }
 
-// https://www.boot.dev/lessons/d2a10614-3142-4d3e-906e-5a817aa920b3
+// don't touch below this line
+
+func sendReports(numBatches int, ch chan int) {
+	for i := 0; i < numBatches; i++ {
+		numReports := i*23 + 32%17
+		ch <- numReports
+	}
+	close(ch)
+}
