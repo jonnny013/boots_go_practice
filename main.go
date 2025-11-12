@@ -66,3 +66,6 @@ func saveSnapshot(logChan chan string) {
 func waitForData(logChan chan string) {
 	logChan <- "Nothing to do, waiting..."
 }
+
+
+// next step: https://www.boot.dev/lessons/1f2da05c-9dda-4759-a237-74fab3dac89a
