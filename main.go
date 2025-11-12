@@ -1,23 +1,26 @@
 package main
 
-func countReports(numSentCh chan int) int {
-	count := 0
-	for {
-		val, ok := <-numSentCh
-		if !ok {
-			break
-		}
-		count += val
+func concurrentFib(n int) []int {
+	ch := make(chan int)
+
+	go fibonacci(n, ch)
+
+	var vals []int
+
+	for i := range ch {
+		vals = append(vals, i)
 	}
-	return count
+
+	return vals
 }
 
 // don't touch below this line
 
-func sendReports(numBatches int, ch chan int) {
-	for i := 0; i < numBatches; i++ {
-		numReports := i*23 + 32%17
-		ch <- numReports
+func fibonacci(n int, ch chan int) {
+	x, y := 0, 1
+	for i := 0; i < n; i++ {
+		ch <- x
+		x, y = y, x+y
 	}
 	close(ch)
 }
