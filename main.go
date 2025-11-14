@@ -7,7 +7,7 @@ import (
 
 type safeCounter struct {
 	counts map[string]int
-	mu     *sync.Mutex
+	mu     *sync.RWMutex
 }
 
 func (sc safeCounter) inc(key string) {
@@ -17,9 +17,9 @@ func (sc safeCounter) inc(key string) {
 }
 
 func (sc safeCounter) val(key string) int {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	return sc.slowVal(key)
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+	return sc.counts[key]
 }
 
 // don't touch below this line
@@ -29,9 +29,4 @@ func (sc safeCounter) slowIncrement(key string) {
 	time.Sleep(time.Microsecond)
 	tempCounter++
 	sc.counts[key] = tempCounter
-}
-
-func (sc safeCounter) slowVal(key string) int {
-	time.Sleep(time.Microsecond)
-	return sc.counts[key]
 }
