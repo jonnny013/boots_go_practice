@@ -5,67 +5,53 @@ import (
 	"time"
 )
 
-func main() {
-	snapCh := make(chan time.Time, 10)
-	saveCh := make(chan time.Time)
-	logCh := make(chan string)
-
-	go func() {
-		tickerInterval := 200 * time.Millisecond
-		for {
-			time.Sleep(tickerInterval)
-			select {
-			case snapCh <- time.Now():
-			default:
-
-			}
+func pingPong(numPings int) {
+	pings := make(chan struct{})
+	pongs := make(chan struct{})
+	go ponger(pings, pongs)
+	go pinger(pings, numPings)
+	func() {
+		i := 0
+		for range pongs {
+			fmt.Println("got pong", i)
+			i++
 		}
+		fmt.Println("pongs done")
 	}()
-
-	go func() {
-		time.Sleep(1 * time.Second)
-		saveCh <- time.Now()
-		close(saveCh)
-	}()
-
-	go saveBackups(snapCh, saveCh, logCh)
-
-	for m := range logCh {
-		fmt.Println(m)
-	}
-
-}
-
-func saveBackups(snapshotTicker, saveAfter <-chan time.Time, logChan chan string) {
-	for {
-		select {
-		case <-snapshotTicker:
-			takeSnapshot(logChan)
-		case <-saveAfter:
-			saveSnapshot(logChan)
-			return
-		default:
-			waitForData(logChan)
-			time.Sleep(500 * time.Millisecond)
-		}
-	}
-
 }
 
 // don't touch below this line
 
-func takeSnapshot(logChan chan string) {
-	logChan <- "Taking a backup snapshot..."
+func pinger(pings chan struct{}, numPings int) {
+	sleepTime := 50 * time.Millisecond
+	for i := 0; i < numPings; i++ {
+		fmt.Printf("sending ping %v\n", i)
+		pings <- struct{}{}
+		time.Sleep(sleepTime)
+		sleepTime *= 2
+	}
+	close(pings)
 }
 
-func saveSnapshot(logChan chan string) {
-	logChan <- "All backups saved!"
-	close(logChan)
+func ponger(pings, pongs chan struct{}) {
+	i := 0
+	for range pings {
+		fmt.Printf("got ping %v, sending pong %v\n", i, i)
+		pongs <- struct{}{}
+		i++
+	}
+	fmt.Println("pings done")
+	close(pongs)
 }
 
-func waitForData(logChan chan string) {
-	logChan <- "Nothing to do, waiting..."
+func test(numPings int) {
+	fmt.Println("Starting game...")
+	pingPong(numPings)
+	fmt.Println("===== Game over =====")
 }
 
-
-// next step: https://www.boot.dev/lessons/1f2da05c-9dda-4759-a237-74fab3dac89a
+func main() {
+	test(4)
+	test(3)
+	test(2)
+}
