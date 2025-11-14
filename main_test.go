@@ -2,34 +2,25 @@ package main
 
 import (
 	"fmt"
-	"slices"
+	"sync"
 	"testing"
-	"time"
 )
 
-func TestSaveBackups(t *testing.T) {
+func Test(t *testing.T) {
 	type testCase struct {
-		expectedLogs []string
+		email string
+		count int
 	}
 
 	runCases := []testCase{
-		{
-			expectedLogs: []string{
-				"Nothing to do, waiting...",
-				"Nothing to do, waiting...",
-				"Taking a backup snapshot...",
-				"Nothing to do, waiting...",
-				"Nothing to do, waiting...",
-				"Taking a backup snapshot...",
-				"Nothing to do, waiting...",
-				"Taking a backup snapshot...",
-				"Nothing to do, waiting...",
-				"All backups saved!",
-			},
-		},
+		{"norman@bates.com", 23},
+		{"marion@bates.com", 67},
 	}
 
-	submitCases := append(runCases, []testCase{}...)
+	submitCases := append(runCases, []testCase{
+		{"lila@bates.com", 31},
+		{"sam@bates.com", 453},
+	}...)
 
 	testCases := runCases
 	if withSubmit {
@@ -38,65 +29,51 @@ func TestSaveBackups(t *testing.T) {
 
 	skipped := len(submitCases) - len(testCases)
 
-	passed, failed := 0, 0
+	passCount := 0
+	failCount := 0
+
 	for _, test := range testCases {
-		expectedLogs := test.expectedLogs
-
-		snapshotTicker := time.Tick(800 * time.Millisecond)
-		saveAfter := time.After(2800 * time.Millisecond)
-		logChan := make(chan string)
-		go saveBackups(snapshotTicker, saveAfter, logChan)
-		actualLogs := []string{}
-		for actualLog := range logChan {
-			fmt.Println(actualLog)
-			actualLogs = append(actualLogs, actualLog)
+		sc := safeCounter{
+			counts: make(map[string]int),
+			mu:     &sync.Mutex{},
 		}
+		var wg sync.WaitGroup
+		for i := 0; i < test.count; i++ {
+			wg.Add(1)
+			go func(email string) {
+				sc.inc(email)
+				wg.Done()
+			}(test.email)
+		}
+		wg.Wait()
 
-		if !slices.Equal(expectedLogs, actualLogs) {
+		if output := sc.val(test.email); output != test.count {
+			failCount++
 			t.Errorf(`---------------------------------
 Test Failed:
-expected:
-%v
-actual:
-%v
-`, sliceWithBullets(expectedLogs), sliceWithBullets(actualLogs))
-			failed++
+  email: %v
+  count: %v
+  expected count: %v
+  actual count:   %v
+`, test.email, test.count, test.count, output)
 		} else {
+			passCount++
 			fmt.Printf(`---------------------------------
 Test Passed:
-expected:
-%v
-actual:
-%v
-`, sliceWithBullets(expectedLogs), sliceWithBullets(actualLogs))
-			passed++
+  email: %v
+  count: %v
+  expected count: %v
+  actual count:   %v
+`, test.email, test.count, test.count, output)
 		}
 	}
 
 	fmt.Println("---------------------------------")
 	if skipped > 0 {
-		fmt.Printf("\n%d passed, %d failed, %d skipped\n", passed, failed, skipped)
+		fmt.Printf("%d passed, %d failed, %d skipped\n", passCount, failCount, skipped)
 	} else {
-		fmt.Printf("\n%d passed, %d failed\n", passed, failed)
+		fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 	}
-}
-
-func sliceWithBullets[T any](slice []T) string {
-	if slice == nil {
-		return "  <nil>"
-	}
-	if len(slice) == 0 {
-		return "  []"
-	}
-	output := ""
-	for i, item := range slice {
-		form := "  - %#v\n"
-		if i == (len(slice) - 1) {
-			form = "  - %#v"
-		}
-		output += fmt.Sprintf(form, item)
-	}
-	return output
 }
 
 // withSubmit is set at compile time depending
