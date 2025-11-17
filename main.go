@@ -1,7 +1,12 @@
 package main
 
 func getLast[T any](s []T) T {
-	// ?
+	var myZero T
+	length := len(s)
+	if length == 0 {
+		return myZero
+	}
+	return s[length - 1]
 }
 
 
