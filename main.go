@@ -1,13 +1,58 @@
 package main
 
-func getLast[T any](s []T) T {
-	var myZero T
-	length := len(s)
-	if length == 0 {
-		return myZero
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+func chargeForLineItem[T lineItem](newItem T, oldItems []T, balance float64) ([]T, float64, error) {
+
+	var oldZero []T
+	var balZero float64
+	if newItem.GetCost() > balance {
+		return oldZero, balZero, errors.New("insufficient funds")
 	}
-	return s[length - 1]
+	return append(oldItems, newItem), balance - newItem.GetCost(), nil
 }
 
+// don't edit below this line
 
-// next step: https://www.boot.dev/lessons/c8999752-768a-401b-b881-602929927699
+type lineItem interface {
+	GetCost() float64
+	GetName() string
+}
+
+type subscription struct {
+	userEmail string
+	startDate time.Time
+	interval  string
+}
+
+func (s subscription) GetName() string {
+	return fmt.Sprintf("%s subscription", s.interval)
+}
+
+func (s subscription) GetCost() float64 {
+	if s.interval == "monthly" {
+		return 25.00
+	}
+	if s.interval == "yearly" {
+		return 250.00
+	}
+	return 0.0
+}
+
+type oneTimeUsagePlan struct {
+	userEmail        string
+	numEmailsAllowed int
+}
+
+func (otup oneTimeUsagePlan) GetName() string {
+	return fmt.Sprintf("one time usage plan with %v emails", otup.numEmailsAllowed)
+}
+
+func (otup oneTimeUsagePlan) GetCost() float64 {
+	const costPerEmail = 0.03
+	return float64(otup.numEmailsAllowed) * costPerEmail
+}
